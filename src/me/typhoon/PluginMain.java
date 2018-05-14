@@ -30,33 +30,37 @@ public class PluginMain extends JavaPlugin implements Listener{
 		
 	}
 	
-	@EventHandler
-	public void joinPlayer(PlayerJoinEvent event) {
-		Player player = event.getPlayer();
-		
+	public void create(Player player) {
 		ChannelDuplexHandler channel = new ChannelDuplexHandler() {
 			
 			@Override
-			public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-				if(msg instanceof PacketPlayInUpdateSign) {
-					PacketPlayInUpdateSign packet = (PacketPlayInUpdateSign)ctx;
-					recvName = packet.b()[0];
+			public void channelRead(ChannelHandlerContext context, Object packet) throws Exception{
+				if(packet instanceof PacketPlayInUpdateSign) {
+					PacketPlayInUpdateSign sign = (PacketPlayInUpdateSign)packet;
+			
+					if(!(sign.b()[0].equals(""))) {
+						getLogger().info(sign.b()[0]);
+						getLogger().info(player.getName());
+						player.setDisplayName(sign.b()[0]);
+					}
 				}
 				
-				super.channelRead(ctx, msg);
+				super.channelRead(context, packet);
 			}
 		};
 		
 		ChannelPipeline pipe = ((CraftPlayer)player).getHandle().playerConnection.networkManager.channel.pipeline();
-		pipe.addAfter("packet_handler", player.getName(), channel);
-		
+		pipe.addBefore("packet_handler", player.getName(), channel);
+	}
+	
+	@EventHandler
+	public void joinPlayer(PlayerJoinEvent event) {
+		create(event.getPlayer());
 	}
 	
 	@EventHandler
 	public void openSign(BlockPlaceEvent event) {
 		Player player = event.getPlayer();
-		
-		player.sendMessage(recvName);
 		
 		BlockPosition bp = new BlockPosition(((CraftPlayer) player).getHandle());         
 		PacketPlayOutOpenSignEditor packet = new PacketPlayOutOpenSignEditor(bp);
